@@ -8,8 +8,8 @@ from ..handlers import Handler
 from ..strings import OpenString
 
 
-class NewAndroidHandler(Handler):
-    name = "New Android"
+class LxmlAndroidHandler(Handler):
+    name = "lxml_Android"
     extension = "xml"
 
     def parse(self, content):
