@@ -187,7 +187,8 @@ class LxmlAndroidHandler(Handler):
         compiled = template[:resources_tag_position]
         self.root = etree.fromstring(template.encode('UTF-8'))
 
-        self._stringset = iter(stringset)
+        self._stringset = stringset
+        self._stringset_index = 0
 
         for element in self.root:
             if element.tag == "string":
@@ -202,13 +203,15 @@ class LxmlAndroidHandler(Handler):
 
     def _compile_string(self, element):
         try:
-            next_string = next(self._stringset)
-        except StopIteration:
+            next_string = self._stringset[self._stringset_index]
+        except IndexError:
             next_string = None
 
         if (next_string is not None and
                 next_string.template_replacement == element.text):
             # Found one to replace
+            self._stringset_index += 1
+
             new_element = self._copy_element(element)
             # Do this in order to preserve XML-characters in string; tag name
             # is irrelevant
@@ -227,13 +230,15 @@ class LxmlAndroidHandler(Handler):
 
         for item_element in new_array_element:
             try:
-                next_string = next(self._stringset)
-            except StopIteration:
+                next_string = self._stringset[self._stringset_index]
+            except IndexError:
                 next_string is None
 
             if (next_string is not None and
                     next_string.template_replacement == item_element.text):
                 # Found one to replace
+                self._stringset_index += 1
+
                 new_item_element = self._copy_element(item_element)
                 replacement_xml = etree.fromstring("<a>{}</a>".
                                                    format(next_string.string))
@@ -255,12 +260,14 @@ class LxmlAndroidHandler(Handler):
         assert len(plurals_element) == 1
         item_element = plurals_element[0]
         try:
-            next_string = next(self._stringset)
-        except StopIteration:
+            next_string = self._stringset[self._stringset_index]
+        except IndexError:
             next_string = None
         if (next_string is not None and
                 next_string.template_replacement == item_element.text):
             # Found one to replace
+            self._stringset_index += 1
+
             new_plurals_element = self._copy_element(plurals_element)
             for rule, string in sorted(next_string.string.items(),
                                        key=lambda i: i[0]):
