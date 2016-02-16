@@ -1,3 +1,7 @@
+from copy import deepcopy
+from lxml import etree
+
+
 class Transcriber(object):
     r"""
     This class helps with creating a template from an imported file or compile
@@ -268,3 +272,79 @@ class Transcriber(object):
             return chunk.replace('\n', '\r\n')
         else:
             return chunk
+
+
+class LxmlTranscriber(object):
+    """ Sample usage:
+
+        source:
+            <list>
+                <line>First line</line>
+                <line>Second line</line>
+            </list>
+
+        >>> transcriber = LxmlTranscriber(source)
+        >>> for line in trascriber:
+        ...     string = line.extract_inner()
+        ...     replacement = string[::-1]  # Reverse it
+        ...     line.replace_inner(replacement)
+        >>> print trascriber.get_destincation()
+    """
+    def __init__(self, source):
+        self.source = source
+        if isinstance(self.source, str):
+            self.source = etree.fromstring(self.source)
+        self.destination = deepcopy(self.source)
+        self.dropped = False
+
+    def __iter__(self):
+        for element in self.destination:
+            subtranscriber = self.__class__(element)
+            yield subtranscriber
+            if subtranscriber.dropped:
+                self.destination.remove(element)
+            else:
+                self.destination.replace(element, subtranscriber.destination)
+
+    def drop(self):
+        self.dropped = True
+
+    def extract_inner(self):
+        string = etree.tostring(self.source)
+        start = string.index('>') + 1
+        end = len(string) - string[::-1].index('<') - 1
+        return string[start:end]
+
+    def replace_inner(self, text):
+        self.destination.text = ""
+        for item in self.destination:
+            self.destination.remove(item)
+
+        text_xml = etree.fromstring("<a>{}</a>".format(text))
+        self.destination.text = text_xml.text
+        for item in text_xml:
+            self.destination.append(item)
+
+    def get_destination(self):
+        return etree.tostring(self.destination)
+
+    @staticmethod
+    def _copy_element(element):
+        "Returns a copy of the 'element', stripping all its contents"
+        new_element = deepcopy(element)
+        for item in new_element:
+            new_element.remove(item)
+        return new_element
+
+    # etree.Element wrappers
+    @property
+    def tag(self):
+        return self.destination.tag
+
+    @property
+    def attrib(self):
+        return self.destination.attrib
+
+    @property
+    def sourceline(self):
+        return self.destination.sourceline
