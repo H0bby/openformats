@@ -279,24 +279,43 @@ class LxmlTranscriber(object):
 
         source:
             <list>
-                <line>First line</line>
-                <line>Second line</line>
+                <line action="replace_with_hello_world">First line</line>
+                <line action="drop_this">Second line</line>
+                <line action="reverse_this">Third line</line>
+                <line action="empty_this">Fourth line</line>
             </list>
 
         >>> transcriber = LxmlTranscriber(source)
-        >>> for line in trascriber:
-        ...     string = line.extract_inner()
-        ...     replacement = string[::-1]  # Reverse it
-        ...     line.replace_inner(replacement)
-        >>> print trascriber.get_destincation()
+        >>> for line in transcriber:
+        ...     if line.attrib['action'] == "replace_with_hello_world":
+        ...         line.replace_inner("hello world")
+        ...     elif line.attrib['action'] == "drop_this":
+        ...         line.drop()
+        ...     elif line.attrib['action'] == "reverse_this":
+        ...         text = line.extract_inner()
+        ...         line.replace_inner(text[::-1])
+        ...     elif line.attrib['action'] == "empty_this":
+        ...         line.replace_inner("")
+        >>> print transcriber.get_destincation()
+
+        output:
+            <list>
+                <line action="replace_with_hello_world">hello world</line>
+                <line action="reverse_this">enil drihT</line>
+                <line action="empty_this"/>
+            </list>
     """
-    def __init__(self, source):
+
+    def __init__(self, source, encoding="UTF-8"):
         self.source = source
+        if isinstance(self.source, unicode):
+            self.source = etree.fromstring(self.source.encode(encoding))
         if isinstance(self.source, str):
             self.source = etree.fromstring(self.source)
         self.destination = deepcopy(self.source)
         self.dropped = False
 
+    # Modify `etree.Element`'s iteration
     def __iter__(self):
         for element in self.destination:
             subtranscriber = self.__class__(element)
@@ -306,6 +325,7 @@ class LxmlTranscriber(object):
             else:
                 self.destination.replace(element, subtranscriber.destination)
 
+    # Transcriber utils
     def drop(self):
         self.dropped = True
 
@@ -328,14 +348,6 @@ class LxmlTranscriber(object):
     def get_destination(self):
         return etree.tostring(self.destination)
 
-    @staticmethod
-    def _copy_element(element):
-        "Returns a copy of the 'element', stripping all its contents"
-        new_element = deepcopy(element)
-        for item in new_element:
-            new_element.remove(item)
-        return new_element
-
     # etree.Element wrappers
     @property
     def tag(self):
@@ -348,3 +360,12 @@ class LxmlTranscriber(object):
     @property
     def sourceline(self):
         return self.destination.sourceline
+
+    # General helpers
+    @staticmethod
+    def _copy_element(element):
+        "Returns a copy of the 'element', stripping all its contents"
+        new_element = deepcopy(element)
+        for item in new_element:
+            new_element.remove(item)
+        return new_element
