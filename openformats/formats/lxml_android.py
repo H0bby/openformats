@@ -35,20 +35,20 @@ class LxmlAndroidHandler(Handler):
             elif element.tag == etree.Comment:
                 self.last_comment = element.extract_inner()
             elif element.tag == "string":
-                string = self._handle_string_tag(element)
+                string = self._handle_string(element)
                 if string is not None:
                     stringset.append(string)
                     self.last_comment = ""
             elif element.tag == "string-array":
                 at_least_one = False
-                for string in self._handle_string_array_tag(element):
+                for string in self._handle_string_array(element):
                     if string is not None:
                         stringset.append(string)
                         at_least_one = True
                 if at_least_one:
                     self.last_comment = ""
             elif element.tag == "plurals":
-                string = self._handle_plurals_tag(element)
+                string = self._handle_plurals(element)
                 if string is not None:
                     stringset.append(string)
                     self.last_comment = ""
@@ -56,7 +56,7 @@ class LxmlAndroidHandler(Handler):
         template += self.transcriber.get_destination()
         return template, stringset
 
-    def _handle_string_tag(self, string_element):
+    def _handle_string(self, string_element):
         try:
             name = string_element.attrib['name']
         except KeyError:
@@ -75,7 +75,7 @@ class LxmlAndroidHandler(Handler):
         string_element.replace_inner(string.template_replacement)
         return string
 
-    def _handle_string_array_tag(self, array_element):
+    def _handle_string_array(self, array_element):
         try:
             name = array_element.attrib['name']
         except KeyError:
@@ -104,7 +104,7 @@ class LxmlAndroidHandler(Handler):
             item.replace_inner(string.template_replacement)
             yield string
 
-    def _handle_plurals_tag(self, plurals_element):
+    def _handle_plurals(self, plurals_element):
         try:
             name = plurals_element.attrib['name']
         except KeyError:
@@ -152,12 +152,12 @@ class LxmlAndroidHandler(Handler):
                             developer_comment=self.last_comment)
 
         # Now that we have the hash from the string, lets make another pass to
-        # replace the <item>s; we will only keep the rule=5 item
-        for item in plurals_element:
-            if self.get_rule_number(item.attrib['quantity']) == 5:
-                item.replace_inner(string.template_replacement)
-            else:
-                item.drop()
+        # replace the <item>s; we will only keep the first item
+        iterator = iter(plurals_element)
+        first = next(iterator)
+        first.replace_inner(string.template_replacement)
+        for item in iterator:  # Drop the rest
+            item.drop()
 
         return string
 
@@ -217,7 +217,7 @@ class LxmlAndroidHandler(Handler):
 
     def _compile_plurals(self, plurals_element):
         # We expect a single <item> tag here
-        item = next(plurals_element)
+        item = next(iter(plurals_element))
 
         next_string = self._get_next_string()
         if (next_string is not None and
