@@ -361,6 +361,12 @@ class LxmlTranscriber(object):
     def sourceline(self):
         return self.destination.sourceline
 
+    def append(self, element):
+        if isinstance(element, self.__class__):
+            self.destination.append(element.destination)
+        else:
+            self.destination.append(element)
+
     # General helpers
     @staticmethod
     def _copy_element(element):
