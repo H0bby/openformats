@@ -367,6 +367,14 @@ class LxmlTranscriber(object):
         else:
             self.destination.append(element)
 
+    @property
+    def tail(self):
+        return self.destination.tail
+
+    @tail.setter
+    def tail(self, value):
+        self.destination.tail = value
+
     # General helpers
     @staticmethod
     def _copy_element(element):

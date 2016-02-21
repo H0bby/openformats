@@ -114,7 +114,13 @@ class LxmlAndroidHandler(Handler):
             )
         context = plurals_element.attrib.get('product', "")
         strings = {}
-        for item in plurals_element:
+
+        # We won't be editing the items yet, so lets make a list here
+        plurals_element_list = list(plurals_element)
+        # Safekeep these for indentation purposes
+        first, last = plurals_element_list[0], plurals_element_list[-1]
+
+        for item in plurals_element_list:
             if item.tag != "item":
                 raise ParseError(
                     "'{}' element inside 'plurals' tag on line {} is not "
@@ -156,6 +162,7 @@ class LxmlAndroidHandler(Handler):
         iterator = iter(plurals_element)
         first = next(iterator)
         first.replace_inner(string.template_replacement)
+        first.tail = last.tail
         for item in iterator:  # Drop the rest
             item.drop()
 
