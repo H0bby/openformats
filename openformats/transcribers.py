@@ -317,6 +317,9 @@ class LxmlTranscriber(object):
 
     # Modify `etree.Element`'s iteration
     def __iter__(self):
+        # In order for the changes to be kept, this iterator **must** finish,
+        # ie throw a StopIteration. Never `break` when iterating over a
+        # subscriber if you want to keep the changes
         for element in self.destination:
             subtranscriber = self.__class__(element)
             yield subtranscriber
