@@ -54,6 +54,11 @@ class LxmlAndroidHandler(Handler):
                     self.last_comment = ""
 
         template += self.transcriber.get_destination()
+
+        # Try to keep template as close to source as possible
+        if not template.endswith('\n') and content.endswith('\n'):
+            template += '\n'
+
         return template, stringset
 
     def _handle_string(self, string_element):
@@ -189,6 +194,11 @@ class LxmlAndroidHandler(Handler):
                 self._compile_plurals(element)
 
         compiled += self.transcriber.get_destination()
+
+        # Try to keep template as close to source as possible
+        if template.endswith('\n') and not compiled.endswith('\n'):
+            compiled += '\n'
+
         return compiled
 
     def _compile_string(self, string_element):
@@ -224,7 +234,7 @@ class LxmlAndroidHandler(Handler):
 
     def _compile_plurals(self, plurals_element):
         # We expect a single <item> tag here
-        item = next(iter(plurals_element))
+        item = list(plurals_element)[0]
 
         next_string = self._get_next_string()
         if (next_string is not None and
@@ -232,15 +242,23 @@ class LxmlAndroidHandler(Handler):
             # Found one to replace
             self.stringset_index += 1
 
+            # Keep this for indentation
+            head = plurals_element.text
+            plurals_element.text = head
+
+            plurals = sorted(next_string.string.items(), key=lambda i: i[0])
+            len_plurals = len(plurals)
+
             # We must first drop the existing <item> in the template
             for _item in plurals_element:
                 _item.drop()
 
-            for rule, string in sorted(next_string.string.items(),
-                                       key=lambda i: i[0]):
+            for position, (rule, string) in enumerate(plurals):
                 new_item = deepcopy(item)
                 new_item.attrib['quantity'] = self.get_rule_string(rule)
                 new_item.replace_inner(string)
+                if position < len_plurals - 1:
+                    new_item.tail = head
                 plurals_element.append(new_item)
         else:
             # Didn't find it, must remove
