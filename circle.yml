@@ -5,6 +5,7 @@ machine:
 dependencies:
   override:
     - pip install coveralls
+    - pip install -r requirements.txt
 
 test:
   override:
