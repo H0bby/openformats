@@ -96,9 +96,9 @@ class InDesignHandler(Handler):
 
     def _can_skip_content(self, string):
         """
-        Checks if the contents of an XML files are translateable.
+        Checks if the contents of an XML files are translatable.
         Strings that contain only special characters or can be evaluated
-        to a nunber are skipped.
+        to a number are skipped.
         """
         stripped_string = self.SPECIAL_CHARACTERS_REGEX.sub('', string).strip()
         if not stripped_string:
@@ -108,9 +108,7 @@ class InDesignHandler(Handler):
             return True
         except ValueError:
             pass
-        if not self._contains_translatable_character(stripped_string):
-            return True
-        return False
+        return not self._contains_translatable_character(stripped_string)
 
     def _contains_translatable_character(self, string):
         """
