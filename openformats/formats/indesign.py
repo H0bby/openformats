@@ -28,7 +28,7 @@ class InDesignHandler(Handler):
 
     # The ? at the end of the string regex, makes it non-greedy in order to
     # allow trailing spaces to be preserved
-    CONTENT_REGEX = re.compile(r'(<Content>\s*)(.*?)(\s*</Content>)')
+    CONTENT_REGEX = re.compile(r'(<ParagraphStyleRange[ ?\w*="[.\/\$\[\]]*" ?]*>)(.*?)(</ParagraphStyleRange>)', re.DOTALL)
     SPECIAL_CHARACTERS_REGEX = re.compile(r'<\?ACE \d+\?>|<Br/>;')
 
     """ Parse Methods """
@@ -41,7 +41,7 @@ class InDesignHandler(Handler):
     def parse(self, content, **kwargs):
         """ Parses .idml file content and returns the resource template and
             stringset.
-            * Use UCF to unpack `content` to xml fragments
+            * Use UCF to unpack `content` to XML fragments
             * Parse all Story fragments to extract the translatable strings
               and replace them with a replacement hash
             * Pack the fragments back to create the template
@@ -97,9 +97,9 @@ class InDesignHandler(Handler):
 
     def _can_skip_content(self, string):
         """
-        Checks if the contents of an XML files are translateable.
+        Checks if the contents of an XML files are translatable.
         Strings that contain only special characters or can be evaluated
-        to a nunber are skipped.
+        to a number are skipped.
         """
         stripped_string = self.SPECIAL_CHARACTERS_REGEX.sub('', string).strip()
         if not stripped_string:
@@ -129,11 +129,12 @@ class InDesignHandler(Handler):
 
     def _find_and_replace(self, story_xml):
         """
-        Finds all the translatable content in the given XML string
-        replaces it with the string_hash and returns the resulting
-        template while updating `self.stringset` in the process.
+        Finds all the translatable content in the given XML string replaces it
+        with the string_hash and returns the resulting template while updating
+        `self.stringset` in the process.
+
         args:
-            story_xml (str): The xml content of a single Story of the IDML file
+            story_xml (str): The XML content of a single Story of the IDML file
         returns:
             the input string with all translatable content replaced by the
             md5 hash of the string.
@@ -142,9 +143,10 @@ class InDesignHandler(Handler):
         return template
 
     def _replace(self, match):
-        """ Implements the logic used by `self.CONTENT_REGEX.sub(...)` to
-        replace strings with their template replacement and appends new strings
-        to `self.stringset`.
+        """
+        Implement the logic used by `self.CONTENT_REGEX.sub(...)` to replace
+        strings with their template replacement and appends new strings to
+        `self.stringset`.
         """
         opening_tag, string, closing_tag = match.groups()
         string = string.decode('utf-8')
@@ -182,7 +184,7 @@ class InDesignHandler(Handler):
     def _compile_story(self, story_content):
         """ Handles the compilation of a single story
         args:
-            story_content: the xml content of the story
+            story_content: the XML content of the story
         returns:
             compiled_story: the compiled story content
         """
